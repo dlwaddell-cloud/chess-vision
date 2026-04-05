@@ -4,7 +4,7 @@ import { Upload, Cpu, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Play
 
 // --- API & Constants ---
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDcSiZI95Lk48ljOAWamxXstNAqaYasEU8"; // Provided by execution environment
-const GEMINI_MODEL = "gemini-3-flash-preview";
+const GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 // We define URLs for both the modern WASM engine and the stable fallback
 const STOCKFISH_WASM_URL = "https://cdn.jsdelivr.net/npm/stockfish@16.0.0/stockfish.js";
