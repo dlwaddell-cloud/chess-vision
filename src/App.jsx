@@ -134,6 +134,7 @@ export default function App() {
 
   // State: Engine
   const [stockfish, setStockfish] = useState(null);
+  const stockfishRef = useRef(null);
   const [evaluation, setEvaluation] = useState(null);
   const [bestMove, setBestMove] = useState(null);
   const [isAutoEvalOn, setIsAutoEvalOn] = useState(false);
@@ -209,6 +210,7 @@ export default function App() {
         // Trigger the internal worker loading logic
         worker.postMessage('init');
         setStockfish(worker);
+        stockfishRef.current = worker;
       } catch (err) {
         console.error("Failed to setup Stockfish Web Worker:", err);
         setEngineVersion("Engine Failed to Load");
@@ -235,22 +237,26 @@ export default function App() {
 
   // Run Real-time Engine Analysis when FEN changes and Auto-Eval is ON
   useEffect(() => {
-    if (!stockfish || !isEngineReady) return;
-
-    if (isAutoEvalOn) {
+    const worker = stockfishRef.current;
+    if (!worker || !isEngineReady) return;
+    if (!isAutoEvalOn) {
+      worker.postMessage("stop");
+      setEvaluation(null);
+      setBestMove(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const fenStr = fen === 'start'
+        ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        : fen;
       setEvaluation("...");
       setBestMove("...");
-      stockfish.postMessage("stop");
-      stockfish.postMessage(`position fen ${fen === 'start' ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' : fen}`);
-      stockfish.postMessage("go depth 22");
-    } else {
-      stockfish.postMessage("stop");
-    }
-
-    return () => {
-      stockfish.postMessage("stop");
-    };
-  }, [fen, isAutoEvalOn, stockfish, isEngineReady]);
+      worker.postMessage("stop");
+      worker.postMessage(`position fen ${fenStr}`);
+      worker.postMessage("go depth 22");
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [fen, isAutoEvalOn, isEngineReady]);
 
   // Explicit PGN Validation (Runs from start every time it's called)
   const validateAndApplyPgn = (inputPgn) => {
