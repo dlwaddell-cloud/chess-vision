@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Chess } from 'chess.js';
-import { Upload, Cpu, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Play, SquareSquare, RefreshCw, Plus, Wand2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Upload, Cpu, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Play, SquareSquare, RefreshCw, Plus, Wand2, ToggleLeft, ToggleRight, Download } from 'lucide-react';
 
 // --- API & Constants ---
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBGlJcDJKQkduKzPf766kvTUJoCXLjB5KU"; // Provided by execution environment
 const GEMINI_MODEL = "gemini-2.5-flash"; // Latest as of June 2024, optimized for vision tasks
 
 // We define URLs for both the modern WASM engine and the stable fallback
-const STOCKFISH_WASM_URL = "https://cdn.jsdelivr.net/npm/stockfish@16.0.0/stockfish.js";
+const STOCKFISH_WASM_URL = "https://lichess1.org/assets/vendor/stockfish/stockfish.js"; // Lichess hosts a modern WASM version of Stockfish 16
 const STOCKFISH_FALLBACK_URL = "https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js";
 
 // --- Helper Functions ---
@@ -253,7 +253,7 @@ export default function App() {
       setBestMove("...");
       worker.postMessage("stop");
       worker.postMessage(`position fen ${fenStr}`);
-      worker.postMessage("go depth 22");
+      worker.postMessage("go depth 15");
     }, 150);
     return () => clearTimeout(timer);
   }, [fen, isAutoEvalOn, isEngineReady]);
@@ -392,20 +392,22 @@ export default function App() {
   };
 
   const handleNewGame = () => {
-    setPgn("");
-    setDraftPgn("");
-    setFen("start");
-    setMoveHistory([]);
-    setCurrentMoveIndex(-1);
-    setErrorMessage("");
-    setIsPgnValid(true);
-    setPgnErrorDetail("");
-    setImagePreviews([]);
-    setSelectedImagesData([]);
-    setEvaluation(null);
-    setBestMove(null);
-    if (stockfish) stockfish.postMessage("stop");
-    setIsAutoEvalOn(false);
+    window.location.reload();
+  };
+
+  const handleDownloadPgn = () => {
+    const contents = draftPgn.trim() || pgn.trim();
+    if (!contents) return;
+
+    const blob = new Blob([contents], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'game.pgn';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Convert raw UCI best move into readable Standard Algebraic Notation (SAN)
@@ -515,13 +517,21 @@ export default function App() {
               placeholder={"[Event \"Tournament\"]\n\n1. e4 e5 2. Nf3 Nc6..."}
             />
             
-            <div className="mt-3 flex justify-end">
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
               <button
                 onClick={() => validateAndApplyPgn(draftPgn)}
-                className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-all shadow-sm"
+                className="flex items-center justify-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-all shadow-sm"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Check & Apply Changes
+              </button>
+              <button
+                onClick={handleDownloadPgn}
+                disabled={!draftPgn.trim() && !pgn.trim()}
+                className="flex items-center justify-center px-4 py-2 bg-slate-100 text-slate-800 text-sm font-medium rounded-lg hover:bg-slate-200 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download PGN
               </button>
             </div>
 
