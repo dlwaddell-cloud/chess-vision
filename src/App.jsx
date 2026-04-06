@@ -7,7 +7,7 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBGlJcDJKQkduKzPf766
 const GEMINI_MODEL = "gemini-2.5-flash"; // Latest as of June 2024, optimized for vision tasks
 
 // We define URLs for both the modern WASM engine and the stable fallback
-const STOCKFISH_WASM_URL = "https://lichess1.org/assets/vendor/stockfish/stockfish.js"; // Lichess hosts a modern WASM version of Stockfish 16
+const STOCKFISH_WASM_URL = "https://cdn.jsdelivr.net/npm/stockfish@18.0.7/bin/stockfish-18-lite-single.wasm"; // jsDelivr Stockfish 18 WASM binary
 const STOCKFISH_FALLBACK_URL = "https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js";
 
 // --- Helper Functions ---
