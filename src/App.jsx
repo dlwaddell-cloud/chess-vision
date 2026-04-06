@@ -3,8 +3,8 @@ import { Chess } from 'chess.js';
 import { Upload, Cpu, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Play, SquareSquare, RefreshCw, Plus, Wand2, ToggleLeft, ToggleRight } from 'lucide-react';
 
 // --- API & Constants ---
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDcSiZI95Lk48ljOAWamxXstNAqaYasEU8"; // Provided by execution environment
-const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBGlJcDJKQkduKzPf766kvTUJoCXLjB5KU"; // Provided by execution environment
+const GEMINI_MODEL = "gemini-2.5-flash"; // Latest as of June 2024, optimized for vision tasks
 
 // We define URLs for both the modern WASM engine and the stable fallback
 const STOCKFISH_WASM_URL = "https://cdn.jsdelivr.net/npm/stockfish@16.0.0/stockfish.js";
