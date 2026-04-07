@@ -10,7 +10,7 @@ export async function onRequestPost(context) {
     // 2. Forward the request to Google securely using your hidden API key
     // Note: Update "gemini-2.5-flash" if you are using a different vision model
     const googleResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyB1rqqnzsKmHRJtCrROxGGt4KcPFwqTqls`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
