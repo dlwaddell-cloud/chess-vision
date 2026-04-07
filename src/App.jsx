@@ -7,7 +7,8 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBGlJcDJKQkduKzPf766
 const GEMINI_MODEL = "gemini-2.5-flash"; // Latest as of June 2024, optimized for vision tasks
 
 // We define URLs for both the modern WASM engine and the stable fallback
-const STOCKFISH_WASM_URL = "https://cdn.jsdelivr.net/npm/stockfish@18.0.7/bin/stockfish-18-lite-single.wasm"; // jsDelivr Stockfish 18 WASM binary
+const STOCKFISH_WASM_SCRIPT_URL = "https://unpkg.com/stockfish@18.0.7/bin/stockfish-18-lite-single.js"; // Unpkg Stockfish 18 JS wrapper
+const STOCKFISH_WASM_BINARY_URL = "https://unpkg.com/stockfish@18.0.7/bin/stockfish-18-lite-single.wasm"; // Unpkg Stockfish 18 WASM binary
 const STOCKFISH_FALLBACK_URL = "https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js";
 
 // --- Helper Functions ---
@@ -149,14 +150,15 @@ export default function App() {
           self.onmessage = function(e) {
             if (e.data === 'init') {
               try {
-                // Attempt to load the modern Lichess WASM engine (Stockfish 16)
-                importScripts('${STOCKFISH_WASM_URL}');
+                // Attempt to load the modern Stockfish 18 WASM engine
+                importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
                 
                 if (typeof Stockfish === 'function') {
                   Stockfish({
                     locateFile: function(path) {
-                      // Ensure it resolves the .wasm file dynamically from the CDN
-                      return '${STOCKFISH_WASM_URL}'.replace('stockfish.js', path);
+                      // Stockfish wrapper requests stockfish.wasm internally;
+                      // map that request to the actual CDN binary URL.
+                      return '${STOCKFISH_WASM_BINARY_URL}';
                     }
                   }).then(function(engine) {
                     // Route WASM engine output back to the React app
@@ -164,7 +166,11 @@ export default function App() {
                     // Route React app input directly to the WASM engine
                     self.onmessage = function(msg) { engine.postMessage(msg.data); };
                     
-                    postMessage('engineReady: Stockfish 16 (WASM NNUE)');
+                    postMessage('engineReady: Stockfish 18 (WASM NNUE)');
+                  }).catch(function(err) {
+                    console.error('Stockfish WASM initialization failed:', err);
+                    importScripts('${STOCKFISH_FALLBACK_URL}');
+                    postMessage('engineReady: Stockfish 10 (ASM.js Fallback)');
                   });
                 } else {
                   throw new Error("WASM Engine initialization function not found");
