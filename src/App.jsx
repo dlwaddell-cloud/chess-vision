@@ -150,31 +150,10 @@ export default function App() {
           self.onmessage = function(e) {
             if (e.data === 'init') {
               try {
-                // Attempt to load the modern Stockfish 18 WASM engine
-                importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
-                
-                if (typeof Stockfish === 'function') {
-                  Stockfish({
-                    locateFile: function(path) {
-                      // Stockfish wrapper requests stockfish.wasm internally;
-                      // map that request to the actual CDN binary URL.
-                      return '${STOCKFISH_WASM_BINARY_URL}';
-                    }
-                  }).then(function(engine) {
-                    // Route WASM engine output back to the React app
-                    engine.addMessageListener(function(line) { postMessage(line); });
-                    // Route React app input directly to the WASM engine
-                    self.onmessage = function(msg) { engine.postMessage(msg.data); };
-                    
-                    postMessage('engineReady: Stockfish 18 (WASM NNUE)');
-                  }).catch(function(err) {
-                    console.error('Stockfish WASM initialization failed:', err);
-                    importScripts('${STOCKFISH_FALLBACK_URL}');
-                    postMessage('engineReady: Stockfish 10 (ASM.js Fallback)');
-                  });
-                } else {
-                  throw new Error("WASM Engine initialization function not found");
-                }
+                // Attempt to load the modern Stockfish 18 WASM engine in worker mode
+                // The wrapper uses the URL hash to locate its WASM binary.
+                importScripts('${STOCKFISH_WASM_SCRIPT_URL}#${encodeURIComponent(STOCKFISH_WASM_BINARY_URL)},worker');
+                postMessage('engineReady: Stockfish 18 (WASM NNUE)');
               } catch (err) {
                 // Failsafe: Load the older, pure ASM.js engine if WASM is blocked by the browser
                 importScripts('${STOCKFISH_FALLBACK_URL}');
