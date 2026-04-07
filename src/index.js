@@ -5,7 +5,7 @@ async function handleGeminiPost(request, env) {
 
     // 2. Forward the request to Google securely using your hidden API key
     const googleResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=cfut_Yg3RAgWBbEYiPt4eUWPPQigiCALKLngLq9PREvked9407ee0`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyB1rqqnzsKmHRJtCrROxGGt4KcPFwqTqls`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
