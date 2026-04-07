@@ -8,3 +8,7 @@ command = "npm run build"
 
 [site]
 bucket = "./dist"
+
+# Environment variables (secrets should be set via wrangler secret put)
+[vars]
+GEMINI_API_KEY = "AIzaSyB1rqqnzsKmHRJtCrROxGGt4KcPFwqTqls"  # Replace with your actual key or set via wrangler secret put
