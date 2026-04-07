@@ -35,6 +35,13 @@ export default {
     }
 
     // For other requests, serve the static site
+    if (!env.ASSETS) {
+      return new Response(
+        'Static asset binding missing: env.ASSETS is undefined. Check wrangler.toml site bucket and redeploy.',
+        { status: 500 }
+      );
+    }
+
     return env.ASSETS.fetch(request);
   },
 };
