@@ -3,8 +3,7 @@ import { Chess } from 'chess.js';
 import { Upload, Cpu, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Play, SquareSquare, RefreshCw, Plus, Wand2, ToggleLeft, ToggleRight, Download } from 'lucide-react';
 
 // --- API & Constants ---
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyB1rqqnzsKmHRJtCrROxGGt4KcPFwqTqls"; // Provided by execution environment
-const GEMINI_MODEL = "gemini-2.5-flash"; // Latest as of June 2024, optimized for vision tasks
+const GEMINI_MODEL = "gemini-1.5-flash"; // Latest as of June 2024, optimized for vision tasks
 
 // We define URLs for both the modern WASM engine and the stable fallback
 const STOCKFISH_WASM_SCRIPT_URL = "https://unpkg.com/stockfish@18.0.7/bin/stockfish-18-lite-single.js"; // Unpkg Stockfish 18 JS wrapper
@@ -38,7 +37,7 @@ const callGeminiWithBackoff = async (imagesData) => {
     }]
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const url = `/api/gemini`;
   const delays = [1000, 2000, 4000, 8000, 16000];
   
   for (let attempt = 0; attempt < 6; attempt++) {
