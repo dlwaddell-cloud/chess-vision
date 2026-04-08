@@ -213,7 +213,10 @@ export default function App() {
             const cpMatch = line.match(/score cp (-?\d+)/);
             const mateMatch = line.match(/score mate (-?\d+)/);
             if (cpMatch) setEvaluation((parseInt(cpMatch[1]) / 100).toFixed(2));
-            if (mateMatch) setEvaluation(`M${mateMatch[1]}`);
+            if (mateMatch) {
+  const moves = parseInt(mateMatch[1], 10);
+  setEvaluation(moves > 0 ? `+M${moves}` : `-M${Math.abs(moves)}`);
+}
           }
           // Parse standard UCI best move
           if (line.includes("bestmove")) {
@@ -641,11 +644,29 @@ export default function App() {
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                   <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Eval</div>
                   <div className={`text-xl font-bold ${
-                    evaluation && evaluation.toString().startsWith('-') ? 'text-slate-800' : 'text-emerald-600'
-                  }`}>
-                    {evaluation !== null ? (evaluation > 0 ? `+${evaluation}` : evaluation) : "--"}
-                  </div>
+                    evaluation === "..." || evaluation === null || evaluation == 0 ? 'text-slate-500' : 
+                    evaluation.toString().startsWith('-') ? 'text-slate-800' : 
+                    'text-emerald-600'
+                }`}>
+                  {evaluation === null ? "--" : 
+                  evaluation === "..." ? "..." : 
+                  (typeof evaluation === 'number' && evaluation > 0 ? `+${evaluation}` : evaluation)}
                 </div>
+              </div>
+              {evaluation !== null && evaluation !== "..." && (
+                <div className="mt-4 h-2 w-full bg-slate-800 rounded-full overflow-hidden flex">
+                  <div 
+                    className="h-full bg-white transition-all duration-500 ease-out"
+                    style={{ 
+                      width: `${
+                        evaluation.toString().includes('M') 
+                          ? (evaluation.toString().startsWith('-') ? 0 : 100) 
+                          : Math.max(5, Math.min(95, 50 + (parseFloat(evaluation) * 10)))
+                      }%` 
+                    }}
+                  />
+                </div>
+              )}
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                   <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Best Move</div>
                   <div className="text-xl font-bold text-indigo-600">
