@@ -172,50 +172,26 @@ export default function App() {
     const initStockfish = async () => {
       try {
         const workerCode = `
-          self.onmessage = function(e) {
-            if (e.data === 'init') {
-              try {
-                importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
-                
-                if (typeof Stockfish === 'function') {
-                  Stockfish({
-                    locateFile: function(path) {
-                      if (path.indexOf('.wasm') > -1) {
-                        return '${STOCKFISH_WASM_BINARY_URL}';
-                      }
-                      return path;
-                    }
-                  }).then(function(engine) {
-                    if (engine.addMessageListener) {
-                      engine.addMessageListener(function(line) { self.postMessage(line); });
-                    } else {
-                      engine.print = function(line) { self.postMessage(line); };
-                    }
-                    
-                    self.onmessage = function(msg) {
-                      if (engine.postMessage) {
-                        engine.postMessage(msg.data);
-                      }
-                    };
-                    
-                    self.postMessage('engineReady: Stockfish 18 (WASM NNUE)');
-                  }).catch(function(err) {
-                    self.postMessage('engineReady: Error Loading WASM (' + err.message + ')');
-                  });
-                } else {
-                  importScripts('${STOCKFISH_FALLBACK_URL}');
-                  self.postMessage('engineReady: Stockfish 10 (ASM Fallback)');
-                }
-              } catch (err) {
-                importScripts('${STOCKFISH_FALLBACK_URL}');
-                self.postMessage('engineReady: Stockfish 10 (ASM Fallback)');
+          // 1. Point Emscripten to the correct WASM binary on the CDN
+          self.Module = {
+            locateFile: function(path) {
+              if (path.indexOf('.wasm') > -1) {
+                return '${STOCKFISH_WASM_BINARY_URL}';
               }
+              return path;
             }
           };
+
+          // 2. Load the Engine (It auto-runs and binds to postMessage automatically)
+          try {
+            importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
+          } catch (err) {
+            // Failsafe: Load the older ASM.js engine if WASM fails to fetch
+            importScripts('${STOCKFISH_FALLBACK_URL}');
+          }
         `;
         
         const blob = new Blob([workerCode], { type: 'application/javascript' });
-        // The URL hash workaround is removed since locateFile handles it natively now
         const workerUrl = URL.createObjectURL(blob);
         const worker = new Worker(workerUrl);
         
@@ -225,10 +201,14 @@ export default function App() {
           // Prevent crashes from internal Emscripten loading objects
           if (typeof line !== 'string') return;
           
-          if (line.startsWith("engineReady:")) {
-            setEngineVersion(line.split(": ")[1]);
+          // Parse official UCI identifying info to get the exact version running
+          if (line.startsWith("id name ")) {
+            setEngineVersion(line.replace("id name ", ""));
+          }
+          
+          // 'uciok' confirms the engine is fully loaded and ready for commands
+          if (line === "uciok") {
             setIsEngineReady(true);
-            worker.postMessage("uci");
             return;
           }
 
@@ -250,7 +230,10 @@ export default function App() {
           }
         };
         
-        worker.postMessage('init');
+        // Immediately initialize the engine in UCI mode. 
+        // The worker will buffer this command until the WASM file finishes loading!
+        worker.postMessage("uci");
+        
         setStockfish(worker);
         stockfishRef.current = worker;
       } catch (err) {
@@ -260,9 +243,9 @@ export default function App() {
     };
     initStockfish();
     
-    // ESLint Fix: Use stockfishRef instead of the stockfish state variable to prevent hook dependency warnings
     return () => { if (stockfishRef.current) stockfishRef.current.terminate(); };
   }, []);
+
 
   // Update FEN based on move index
   const updateBoardState = (gameInstance, index) => {
