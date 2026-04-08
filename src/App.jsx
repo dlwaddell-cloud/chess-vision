@@ -175,12 +175,11 @@ export default function App() {
           self.onmessage = function(e) {
             if (e.data === 'init') {
               try {
-                // Attempt to load the modern Stockfish 18 WASM engine in worker mode
-                // The wrapper uses the URL hash to locate its WASM binary.
-                importScripts('${STOCKFISH_WASM_SCRIPT_URL}#${encodeURIComponent(STOCKFISH_WASM_BINARY_URL)},worker');
+                // Load the modern Stockfish 18 WASM engine in worker mode
+                importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
                 postMessage('engineReady: Stockfish 18 (WASM NNUE)');
               } catch (err) {
-                // Failsafe: Load the older, pure ASM.js engine if WASM is blocked by the browser
+                // Failsafe: Load the older, pure ASM.js engine
                 importScripts('${STOCKFISH_FALLBACK_URL}');
                 postMessage('engineReady: Stockfish 10 (ASM.js Fallback)');
               }
@@ -189,7 +188,12 @@ export default function App() {
         `;
         
         const blob = new Blob([workerCode], { type: 'application/javascript' });
-        const worker = new Worker(URL.createObjectURL(blob));
+        
+        // FIX: The wrapper uses self.location.hash to locate its WASM binary.
+        // We MUST append the hash containing the WASM URL directly to the Worker's Blob URL.
+        const blobUrl = URL.createObjectURL(blob);
+        const workerUrl = `${blobUrl}#${encodeURIComponent(STOCKFISH_WASM_BINARY_URL)},worker`;
+        const worker = new Worker(workerUrl);
         
         worker.onmessage = (e) => {
           const line = e.data;
@@ -198,6 +202,9 @@ export default function App() {
           if (line.startsWith("engineReady:")) {
             setEngineVersion(line.split(": ")[1]);
             setIsEngineReady(true);
+            
+            // FIX: Initialize the engine in UCI mode so it accepts evaluation commands
+            worker.postMessage("uci");
             return;
           }
 
