@@ -67,11 +67,11 @@ const callGeminiWithBackoff = async (imagesData) => {
       
       const data = await response.json();
       
-      if (!response.ok) {
-        if (data?.error) {
-          throw new Error(data.error);
-        }
-        throw new Error(`API Error: ${response.status}`);
+      // Check for HTTP errors OR an error object passed in a 200 OK response
+      if (!response.ok || data.error) {
+        // Safely extract the message string whether it's an object or a plain string
+        const errMsg = data?.error?.message || data?.error || `API Error: ${response.status}`;
+        throw new Error(errMsg);
       }
       
       const rawText = extractText(data);
