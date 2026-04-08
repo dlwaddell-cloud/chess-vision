@@ -172,37 +172,47 @@ export default function App() {
     const initStockfish = async () => {
       try {
         const workerCode = `
+          // 1. Pre-configure Emscripten BEFORE loading the script
+          self.Module = {
+            // Force Emscripten to fetch the WASM binary directly from the CDN
+            locateFile: function(path) {
+              if (path.endsWith('.wasm')) {
+                return '${STOCKFISH_WASM_BINARY_URL}';
+              }
+              return path;
+            },
+            // CRITICAL: Route standard engine output directly back to React
+            print: function(text) { 
+              self.postMessage(text); 
+            },
+            printErr: function(text) { 
+              console.error(text); 
+            }
+          };
+
           self.onmessage = function(e) {
             if (e.data === 'init') {
               try {
-                // Load the modern Stockfish 18 WASM engine
+                // 2. Load the modern Stockfish 18 engine
                 importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
                 
-                // Modern Stockfish requires explicit initialization via its factory function
+                // 3. Handle initialization based on how the CDN built the wrapper
                 if (typeof Stockfish === 'function') {
                   Stockfish().then(function(engine) {
-                    // Safely route engine output back to the main thread
                     if (engine.addMessageListener) {
                       engine.addMessageListener(function(line) { self.postMessage(line); });
                     }
-                    
-                    // Override the initialization handler to route subsequent commands directly to the engine
-                    self.onmessage = function(msg) {
-                      engine.postMessage(msg.data);
-                    };
-                    
-                    self.postMessage('engineReady: Stockfish 18 (WASM NNUE)');
-                  }).catch(function(err) {
-                    self.postMessage('error: ' + err.message);
+                    self.onmessage = function(msg) { engine.postMessage(msg.data); };
+                    self.postMessage('engineReady: Stockfish 18 (WASM)');
                   });
                 } else {
-                  // Fallback for older builds that auto-run
+                  // Auto-run Emscripten module (hijacks onmessage automatically)
                   self.postMessage('engineReady: Stockfish 18 (Auto-run)');
                 }
               } catch (err) {
-                // Failsafe: Load the older, pure ASM.js engine
+                // 4. Failsafe: Load the older, pure ASM.js engine
                 importScripts('${STOCKFISH_FALLBACK_URL}');
-                self.postMessage('engineReady: Stockfish 10 (ASM.js Fallback)');
+                self.postMessage('engineReady: Stockfish 10 (ASM Fallback)');
               }
             }
           };
