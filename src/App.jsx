@@ -40,6 +40,23 @@ const callGeminiWithBackoff = async (imagesData) => {
   const url = `/api/gemini`;
   const delays = [1000, 2000, 4000, 8000, 16000];
   
+  const extractText = (data) => {
+    if (!data) return "";
+    const candidates = data.candidates || [];
+    const outputs = data.output || [];
+    const paths = [
+      candidates?.[0]?.content?.[0]?.text,
+      candidates?.[0]?.content?.parts?.[0]?.text,
+      candidates?.[0]?.output?.[0]?.content?.[0]?.text,
+      candidates?.[0]?.output?.[0]?.content?.parts?.[0]?.text,
+      outputs?.[0]?.content?.[0]?.text,
+      outputs?.[0]?.content?.parts?.[0]?.text,
+      data?.content?.[0]?.text,
+      data?.content?.parts?.[0]?.text
+    ];
+    return paths.find(p => typeof p === 'string' && p.trim() !== '') || "";
+  };
+
   for (let attempt = 0; attempt < 6; attempt++) {
     try {
       const response = await fetch(url, {
@@ -51,15 +68,18 @@ const callGeminiWithBackoff = async (imagesData) => {
       const data = await response.json();
       
       if (!response.ok) {
-        // Handle structured error responses from our API
-        if (data.error) {
+        if (data?.error) {
           throw new Error(data.error);
         }
         throw new Error(`API Error: ${response.status}`);
       }
       
-      let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      text = text.replace(/```pgn/gi, '').replace(/```/g, '').trim();
+      const rawText = extractText(data);
+      const text = rawText.replace(/```pgn/gi, '').replace(/```/g, '').trim();
+      if (!text) {
+        console.error('Unexpected Gemini response:', data);
+        throw new Error('No PGN was returned from the Gemini API. Check the API response format and model output.');
+      }
       return text;
     } catch (error) {
       if (attempt === 5) throw error;
@@ -68,7 +88,6 @@ const callGeminiWithBackoff = async (imagesData) => {
   }
 };
 
-// --- Sub-Components ---
 const SimpleBoard = ({ fen }) => {
   const [board, setBoard] = useState([]);
 
