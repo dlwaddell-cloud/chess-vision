@@ -10,6 +10,8 @@ command = "npm run build"
 directory = "./dist"
 binding = "ASSETS"
 
-# Environment variables (secrets should be set via wrangler secret put)
-[vars]
-GEMINI_API_KEY = "AIzaSyB1rqqnzsKmHRJtCrROxGGt4KcPFwqTqls"
+# Environment variables and secrets should be configured in Cloudflare Pages or with
+# `wrangler secret put GEMINI_API_KEY` when deploying this project.
+# Do NOT store your API key in source control.
+# [vars]
+# GEMINI_API_KEY = "REPLACE_WITH_YOUR_SECRET"
