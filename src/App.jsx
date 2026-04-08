@@ -175,13 +175,34 @@ export default function App() {
           self.onmessage = function(e) {
             if (e.data === 'init') {
               try {
-                // Load the modern Stockfish 18 WASM engine in worker mode
+                // Load the modern Stockfish 18 WASM engine
                 importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
-                postMessage('engineReady: Stockfish 18 (WASM NNUE)');
+                
+                // Modern Stockfish requires explicit initialization via its factory function
+                if (typeof Stockfish === 'function') {
+                  Stockfish().then(function(engine) {
+                    // Safely route engine output back to the main thread
+                    if (engine.addMessageListener) {
+                      engine.addMessageListener(function(line) { self.postMessage(line); });
+                    }
+                    
+                    // Override the initialization handler to route subsequent commands directly to the engine
+                    self.onmessage = function(msg) {
+                      engine.postMessage(msg.data);
+                    };
+                    
+                    self.postMessage('engineReady: Stockfish 18 (WASM NNUE)');
+                  }).catch(function(err) {
+                    self.postMessage('error: ' + err.message);
+                  });
+                } else {
+                  // Fallback for older builds that auto-run
+                  self.postMessage('engineReady: Stockfish 18 (Auto-run)');
+                }
               } catch (err) {
                 // Failsafe: Load the older, pure ASM.js engine
                 importScripts('${STOCKFISH_FALLBACK_URL}');
-                postMessage('engineReady: Stockfish 10 (ASM.js Fallback)');
+                self.postMessage('engineReady: Stockfish 10 (ASM.js Fallback)');
               }
             }
           };
@@ -197,6 +218,9 @@ export default function App() {
         
         worker.onmessage = (e) => {
           const line = e.data;
+		  
+		  // ADD THIS LINE: Prevent crashes from internal Emscripten loading objects
+          if (typeof line !== 'string') return;
           
           // Intercept our custom initialization flags
           if (line.startsWith("engineReady:")) {
