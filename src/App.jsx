@@ -3,7 +3,7 @@ import { Chess } from 'chess.js';
 import { Upload, Cpu, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Play, SquareSquare, RefreshCw, Plus, Wand2, ToggleLeft, ToggleRight, Download } from 'lucide-react';
 
 // --- API & Constants ---
-const GEMINI_MODEL = "gemini-2.5-flash"; // Latest as of June 2024, optimized for vision tasks
+const GEMINI_MODEL = "gemini-3.1-flash-lite-preview"; // Latest as of June 2024, optimized for vision tasks
 
 // We define URLs for both the modern WASM engine and the stable fallback
 const STOCKFISH_WASM_SCRIPT_URL = "https://unpkg.com/stockfish@18.0.7/bin/stockfish-18-lite-single.js"; // Unpkg Stockfish 18 JS wrapper
