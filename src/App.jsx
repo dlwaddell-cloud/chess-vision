@@ -48,9 +48,16 @@ const callGeminiWithBackoff = async (imagesData) => {
         body: JSON.stringify(payload)
       });
       
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
-      
       const data = await response.json();
+      
+      if (!response.ok) {
+        // Handle structured error responses from our API
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        throw new Error(`API Error: ${response.status}`);
+      }
+      
       let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       text = text.replace(/```pgn/gi, '').replace(/```/g, '').trim();
       return text;
@@ -368,7 +375,12 @@ export default function App() {
       setDraftPgn(extractedPgn);
       validateAndApplyPgn(extractedPgn);
     } catch (err) {
-      setErrorMessage("Failed to process images. Ensure API key is configured and try again.");
+      const errorMsg = err.message.includes('GEMINI_API_KEY') 
+        ? "API key not configured. Please check your Cloudflare Workers secrets."
+        : err.message.includes('Google API error')
+        ? `Gemini API error: ${err.message}`
+        : `Failed to process images: ${err.message}`;
+      setErrorMessage(errorMsg);
       console.error(err);
     } finally {
       setIsProcessingImage(false);

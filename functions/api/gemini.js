@@ -28,6 +28,19 @@ export async function onRequestPost(context) {
     // 3. Get Google's response
     const data = await googleResponse.json();
 
+    // Check if Google API returned an error
+    if (!googleResponse.ok) {
+      const errorMessage = data.error?.message || `Google API error: ${googleResponse.status}`;
+      return new Response(JSON.stringify({ 
+        error: errorMessage,
+        status: googleResponse.status,
+        details: data.error 
+      }), {
+        status: googleResponse.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // 4. Send the result back to your React app
     return new Response(JSON.stringify(data), {
       headers: { 'Content-Type': 'application/json' }
