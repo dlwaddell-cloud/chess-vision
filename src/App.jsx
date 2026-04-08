@@ -169,15 +169,15 @@ export default function App() {
 
   // Initialize Advanced Stockfish Web Worker Architecture
   useEffect(() => {
-    const workerCode = `
+    const initStockfish = async () => {
+      try {
+        const workerCode = `
           self.onmessage = function(e) {
             if (e.data === 'init') {
               try {
-                // 1. Load the modern Stockfish wrapper script
                 importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
                 
                 if (typeof Stockfish === 'function') {
-                  // 2. Initialize factory and explicitly point to the WASM binary on the CDN
                   Stockfish({
                     locateFile: function(path) {
                       if (path.indexOf('.wasm') > -1) {
@@ -186,14 +186,12 @@ export default function App() {
                       return path;
                     }
                   }).then(function(engine) {
-                    // 3. Route engine output back to your React app
                     if (engine.addMessageListener) {
                       engine.addMessageListener(function(line) { self.postMessage(line); });
                     } else {
                       engine.print = function(line) { self.postMessage(line); };
                     }
                     
-                    // 4. Route React commands to the engine
                     self.onmessage = function(msg) {
                       if (engine.postMessage) {
                         engine.postMessage(msg.data);
@@ -202,44 +200,13 @@ export default function App() {
                     
                     self.postMessage('engineReady: Stockfish 18 (WASM NNUE)');
                   }).catch(function(err) {
-                    // If WASM fails (e.g., adblocker/CDN issue), report it
                     self.postMessage('engineReady: Error Loading WASM (' + err.message + ')');
                   });
                 } else {
-                  // Failsafe: load the older, pure ASM engine
                   importScripts('${STOCKFISH_FALLBACK_URL}');
                   self.postMessage('engineReady: Stockfish 10 (ASM Fallback)');
                 }
               } catch (err) {
-                // Failsafe: load the older, pure ASM engine
-                importScripts('${STOCKFISH_FALLBACK_URL}');
-                self.postMessage('engineReady: Stockfish 10 (ASM Fallback)');
-              }
-            }
-          };
-        `;
-
-          self.onmessage = function(e) {
-            if (e.data === 'init') {
-              try {
-                // 2. Load the modern Stockfish 18 engine
-                importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
-                
-                // 3. Handle initialization based on how the CDN built the wrapper
-                if (typeof Stockfish === 'function') {
-                  Stockfish().then(function(engine) {
-                    if (engine.addMessageListener) {
-                      engine.addMessageListener(function(line) { self.postMessage(line); });
-                    }
-                    self.onmessage = function(msg) { engine.postMessage(msg.data); };
-                    self.postMessage('engineReady: Stockfish 18 (WASM)');
-                  });
-                } else {
-                  // Auto-run Emscripten module (hijacks onmessage automatically)
-                  self.postMessage('engineReady: Stockfish 18 (Auto-run)');
-                }
-              } catch (err) {
-                // 4. Failsafe: Load the older, pure ASM.js engine
                 importScripts('${STOCKFISH_FALLBACK_URL}');
                 self.postMessage('engineReady: Stockfish 10 (ASM Fallback)');
               }
@@ -248,40 +215,33 @@ export default function App() {
         `;
         
         const blob = new Blob([workerCode], { type: 'application/javascript' });
-        
-        // FIX: The wrapper uses self.location.hash to locate its WASM binary.
-        // We MUST append the hash containing the WASM URL directly to the Worker's Blob URL.
-        const blobUrl = URL.createObjectURL(blob);
-        const workerUrl = `${blobUrl}#${encodeURIComponent(STOCKFISH_WASM_BINARY_URL)},worker`;
+        // The URL hash workaround is removed since locateFile handles it natively now
+        const workerUrl = URL.createObjectURL(blob);
         const worker = new Worker(workerUrl);
         
         worker.onmessage = (e) => {
           const line = e.data;
-		  
-		  // ADD THIS LINE: Prevent crashes from internal Emscripten loading objects
+          
+          // Prevent crashes from internal Emscripten loading objects
           if (typeof line !== 'string') return;
           
-          // Intercept our custom initialization flags
           if (line.startsWith("engineReady:")) {
             setEngineVersion(line.split(": ")[1]);
             setIsEngineReady(true);
-            
-            // FIX: Initialize the engine in UCI mode so it accepts evaluation commands
             worker.postMessage("uci");
             return;
           }
 
-          // Parse standard UCI evaluation
           if (line.includes("info depth") && line.includes("score")) {
             const cpMatch = line.match(/score cp (-?\d+)/);
             const mateMatch = line.match(/score mate (-?\d+)/);
             if (cpMatch) setEvaluation((parseInt(cpMatch[1]) / 100).toFixed(2));
             if (mateMatch) {
-  const moves = parseInt(mateMatch[1], 10);
-  setEvaluation(moves > 0 ? `+M${moves}` : `-M${Math.abs(moves)}`);
-}
+              const moves = parseInt(mateMatch[1], 10);
+              setEvaluation(moves > 0 ? `+M${moves}` : `-M${Math.abs(moves)}`);
+            }
           }
-          // Parse standard UCI best move
+          
           if (line.includes("bestmove")) {
             const moveMatch = line.match(/bestmove ([a-h][1-8][a-h][1-8][qrbn]?)/);
             if (moveMatch) {
@@ -290,7 +250,6 @@ export default function App() {
           }
         };
         
-        // Trigger the internal worker loading logic
         worker.postMessage('init');
         setStockfish(worker);
         stockfishRef.current = worker;
@@ -300,7 +259,9 @@ export default function App() {
       }
     };
     initStockfish();
-    return () => { if (stockfish) stockfish.terminate(); };
+    
+    // ESLint Fix: Use stockfishRef instead of the stockfish state variable to prevent hook dependency warnings
+    return () => { if (stockfishRef.current) stockfishRef.current.terminate(); };
   }, []);
 
   // Update FEN based on move index
