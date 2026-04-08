@@ -8,7 +8,7 @@ export async function onRequestPost(context) {
     const body = await request.json();
 
     // 2. Forward the request to Google securely using your hidden API key
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3.1-flash-lite-preview';
     if (!env.GEMINI_API_KEY) {
       return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not configured' }), {
         status: 500,
