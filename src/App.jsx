@@ -6,7 +6,7 @@ import { Upload, Cpu, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Play
 const GEMINI_MODEL = "gemini-3.1-flash-lite-preview"; // Latest as of June 2024, optimized for vision tasks
 
 // We define URLs for both the modern WASM engine and the stable fallback
-const STOCKFISH_FALLBACK_URL = "https://cdn.jsdelivr.net/npm/stockfish@18.0.7/bin/stockfish-18-asm.js";
+const STOCKFISH_FALLBACK_URL = "https://unpkg.com/stockfish@16.0.0/stockfish.js";
 
 // --- Helper Functions ---
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
