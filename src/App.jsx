@@ -5,9 +5,6 @@ import { Upload, Cpu, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Play
 // --- API & Constants ---
 const GEMINI_MODEL = "gemini-3.1-flash-lite-preview"; // Latest as of June 2024, optimized for vision tasks
 
-// We define URLs for both the modern WASM engine and the stable fallback
-const STOCKFISH_FALLBACK_URL = "https://unpkg.com/stockfish@18.0.7/bin/stockfish-18-asm.js";
-
 // --- Helper Functions ---
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -169,14 +166,8 @@ export default function App() {
   useEffect(() => {
     const initStockfish = async () => {
       try {
-        const workerCode = `
-          // Bypass CORS/WASM issues by directly loading the stable pure-JS version
-          importScripts('${STOCKFISH_FALLBACK_URL}');
-        `;
-        
-        const blob = new Blob([workerCode], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(blob);
-        const worker = new Worker(workerUrl);
+        // Initialize the local WASM Web Worker directly from the public folder
+        const worker = new Worker('/stockfish-18-single.js');
         
         worker.onmessage = (e) => {
           const line = e.data;
@@ -263,7 +254,7 @@ export default function App() {
       setBestMove("...");
       worker.postMessage("stop");
       worker.postMessage(`position fen ${fenStr}`);
-      worker.postMessage("go depth 16");
+      worker.postMessage("go depth 20");
     }, 250);
     return () => clearTimeout(timer);
   }, [fen, isAutoEvalOn, isEngineReady]);
