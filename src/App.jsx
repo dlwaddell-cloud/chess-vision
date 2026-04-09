@@ -267,6 +267,10 @@ export default function App() {
       const fenStr = fen === 'start'
         ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
         : fen;
+        
+      // Explicitly lock in the turn for the engine evaluator BEFORE running search
+      activeEvalRef.current.isBlackToMove = fenStr.split(' ')[1] === 'b';
+
       setEvaluation("...");
       setBestMove("...");
       worker.postMessage("stop");
