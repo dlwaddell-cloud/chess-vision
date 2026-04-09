@@ -579,8 +579,29 @@ export default function App() {
               3. Analysis Board
             </h2>
             
-            {/* Chess Board */}
-            <SimpleBoard fen={fen} />
+                        {/* Chess Board & Vertical Eval Bar Wrapper */}
+            <div className="flex justify-center items-stretch gap-2 max-w-[400px] mx-auto">
+              
+              <div className="flex-1 w-full max-w-[360px]">
+                <SimpleBoard fen={fen} />
+              </div>
+
+              {/* Vertical Evaluation Bar */}
+              {evaluation !== null && evaluation !== "..." && (
+                <div className="w-5 bg-slate-800 rounded-sm overflow-hidden flex flex-col justify-end border-4 border-slate-700 shadow-md">
+                  <div
+                    className="w-full bg-white transition-all duration-500 ease-out"
+                    style={{
+                      height: `${
+                        evaluation.toString().includes('M')
+                          ? (evaluation.toString().startsWith('-') ? 0 : 100)
+                          : Math.max(5, Math.min(95, 50 + (parseFloat(evaluation) * 10)))
+                      }%`
+                    }}
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Board Controls */}
             <div className="flex items-center justify-between mt-4 bg-slate-100 p-2 rounded-lg">
@@ -655,22 +676,10 @@ export default function App() {
                   (typeof evaluation === 'number' && evaluation > 0 ? `+${evaluation}` : evaluation)}
                 </div>
               </div>
-              {evaluation !== null && evaluation !== "..." && (
-                <div className="mt-4 h-2 w-full bg-slate-800 rounded-full overflow-hidden flex">
-                  <div 
-                    className="h-full bg-white transition-all duration-500 ease-out"
-                    style={{ 
-                      width: `${
-                        evaluation.toString().includes('M') 
-                          ? (evaluation.toString().startsWith('-') ? 0 : 100) 
-                          : Math.max(5, Math.min(95, 50 + (parseFloat(evaluation) * 10)))
-                      }%` 
-                    }}
-                  />
-                </div>
-              )}
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Best Move</div>
+                
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Best Move</div>
+
                   <div className="text-xl font-bold text-indigo-600">
                     {displayBestMove !== null ? displayBestMove : "--"}
                   </div>
