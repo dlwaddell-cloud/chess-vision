@@ -6,9 +6,7 @@ import { Upload, Cpu, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Play
 const GEMINI_MODEL = "gemini-3.1-flash-lite-preview"; // Latest as of June 2024, optimized for vision tasks
 
 // We define URLs for both the modern WASM engine and the stable fallback
-const STOCKFISH_WASM_SCRIPT_URL = "https://unpkg.com/stockfish@18.0.7/bin/stockfish-18-lite-single.js"; // Unpkg Stockfish 18 JS wrapper
-const STOCKFISH_WASM_BINARY_URL = "https://unpkg.com/stockfish@18.0.7/bin/stockfish-18-lite-single.wasm"; // Unpkg Stockfish 18 WASM binary
-const STOCKFISH_FALLBACK_URL = "https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js";
+const STOCKFISH_FALLBACK_URL = "https://cdn.jsdelivr.net/npm/stockfish@18.0.7/bin/stockfish-18-asm.js";
 
 // --- Helper Functions ---
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -172,23 +170,8 @@ export default function App() {
     const initStockfish = async () => {
       try {
         const workerCode = `
-          // 1. Point Emscripten to the correct WASM binary on the CDN
-          self.Module = {
-            locateFile: function(path) {
-              if (path.indexOf('.wasm') > -1) {
-                return '${STOCKFISH_WASM_BINARY_URL}';
-              }
-              return path;
-            }
-          };
-
-          // 2. Load the Engine (It auto-runs and binds to postMessage automatically)
-          try {
-            importScripts('${STOCKFISH_WASM_SCRIPT_URL}');
-          } catch (err) {
-            // Failsafe: Load the older ASM.js engine if WASM fails to fetch
-            importScripts('${STOCKFISH_FALLBACK_URL}');
-          }
+          // Bypass CORS/WASM issues by directly loading the stable pure-JS version
+          importScripts('${STOCKFISH_FALLBACK_URL}');
         `;
         
         const blob = new Blob([workerCode], { type: 'application/javascript' });
