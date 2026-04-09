@@ -148,12 +148,9 @@ export default function App() {
   const [isPgnValid, setIsPgnValid] = useState(true);
   const [pgnErrorDetail, setPgnErrorDetail] = useState("");
 
-  // Refs: Keep track of latest FEN for the web worker closure
-  const fenRef = useRef(fen);
-  useEffect(() => {
-    fenRef.current = fen;
-  }, [fen]);
-  
+  // Refs: Keep track of active evaluation state for the web worker logic
+  const activeEvalRef = useRef({ isBlackToMove: false });
+
   // State: OCR
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -193,20 +190,26 @@ export default function App() {
           }
 
           if (line.includes("info depth") && line.includes("score")) {
-            // Determine active color using the tracked fenRef
-            const currentFen = fenRef.current === 'start' 
-              ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' 
-              : fenRef.current;
-              
-            const isBlackToMove = currentFen.split(' ')[1] === 'b';
+            // Read perfectly synchronized turn state injected during the evaluation request
+            const isBlackToMove = activeEvalRef.current.isBlackToMove;
             const multiplier = isBlackToMove ? -1 : 1;
-            
+
             const cpMatch = line.match(/score cp (-?\d+)/);
             const mateMatch = line.match(/score mate (-?\d+)/);
-            if (cpMatch) setEvaluation((parseInt(cpMatch[1]) / 100).toFixed(2));
+            
+            if (cpMatch) {
+              let evalValue = (parseInt(cpMatch[1], 10) * multiplier) / 100;
+              // Clean up annoying -0.00 quirks from JS math
+              if (Math.abs(evalValue) === 0) evalValue = 0; 
+              
+              // Format with explicit '+' for positive values
+              setEvaluation(evalValue > 0 ? `+${evalValue.toFixed(2)}` : evalValue.toFixed(2));
+            }
+            
             if (mateMatch) {
               const moves = parseInt(mateMatch[1], 10);
-              setEvaluation(moves > 0 ? `+M${moves}` : `-M${Math.abs(moves)}`);
+              const mateScore = moves * multiplier;
+              setEvaluation(mateScore > 0 ? `+M${mateScore}` : `-M${Math.abs(mateScore)}`);
             }
           }
           
