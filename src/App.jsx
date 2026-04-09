@@ -148,6 +148,12 @@ export default function App() {
   const [isPgnValid, setIsPgnValid] = useState(true);
   const [pgnErrorDetail, setPgnErrorDetail] = useState("");
 
+  // Refs: Keep track of latest FEN for the web worker closure
+  const fenRef = useRef(fen);
+  useEffect(() => {
+    fenRef.current = fen;
+  }, [fen]);
+  
   // State: OCR
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
