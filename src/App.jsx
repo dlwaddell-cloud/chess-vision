@@ -263,7 +263,7 @@ export default function App() {
       setBestMove("...");
       worker.postMessage("stop");
       worker.postMessage(`position fen ${fenStr}`);
-      worker.postMessage("go depth 10");
+      worker.postMessage("go depth 16");
     }, 250);
     return () => clearTimeout(timer);
   }, [fen, isAutoEvalOn, isEngineReady]);
