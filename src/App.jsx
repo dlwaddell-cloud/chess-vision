@@ -187,6 +187,14 @@ export default function App() {
           }
 
           if (line.includes("info depth") && line.includes("score")) {
+            // Determine active color using the tracked fenRef
+            const currentFen = fenRef.current === 'start' 
+              ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' 
+              : fenRef.current;
+              
+            const isBlackToMove = currentFen.split(' ')[1] === 'b';
+            const multiplier = isBlackToMove ? -1 : 1;
+            
             const cpMatch = line.match(/score cp (-?\d+)/);
             const mateMatch = line.match(/score mate (-?\d+)/);
             if (cpMatch) setEvaluation((parseInt(cpMatch[1]) / 100).toFixed(2));
