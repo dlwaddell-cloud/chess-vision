@@ -167,7 +167,7 @@ export default function App() {
     const initStockfish = async () => {
       try {
         // Initialize the local WASM Web Worker directly from the public folder
-        const worker = new Worker('/stockfish-18-single.js');
+        const worker = new Worker('/stockfish-18-lite-single.js');
         
         worker.onmessage = (e) => {
           const line = e.data;
